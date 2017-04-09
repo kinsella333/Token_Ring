@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <string.h>
 #include <strings.h>
 #include <math.h>
 #include <unistd.h>
@@ -18,6 +19,6 @@ long random();//M= 2147483647;
 void srandom(unsigned);
 void IntroduceError(char*, double);
 char *GenerateData(int);
-int *Server(), Client();
+int Server(), Client();
 double floor(double);
 char linebuffer[100];

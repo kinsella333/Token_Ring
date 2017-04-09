@@ -12,13 +12,12 @@
 
 #include "header.h"
 
-int *Server()
+int Server()
 {
 	struct sockaddr_in myaddr, otheraddr;
 	struct hostent *myname;
 
 	int s, fd, otherlength;
-	static int fds[2];
 	char *ch;
 	int hostnamelength;
 
@@ -33,11 +32,10 @@ int *Server()
 
 	listen(s, 1);
 
-	otherlength = sizeof(otheraddr);
-	fd = accept(s, &otheraddr, &otherlength);
+	//otherlength = sizeof(otheraddr);
+	//fd = accept(s, &otheraddr, &otherlength);
 
-	printf("Connected\n");
-	fds[0] = fd;
-	fds[1] = s;
-	return(fds);
+	//printf("Connected\n");
+
+	return(s);
 }
