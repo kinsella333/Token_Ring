@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
 
 #define ReportError(msg)       {perror(msg); exit(-1);}
 
@@ -19,6 +21,6 @@ long random();//M= 2147483647;
 void srandom(unsigned);
 void IntroduceError(char*, double);
 char *GenerateData(int);
-int Server(), Client();
+int Server(int port), Client(int port);
 double floor(double);
 char linebuffer[100];

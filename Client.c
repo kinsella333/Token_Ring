@@ -11,10 +11,10 @@
 
 #include "header.h"
 
-int Client()
+int Client(int port)
 {
 	int s;
-	int n;
+	int n = -1;
 	int code;
 	FILE *fp;
 	char * ch, thishostname[256];
@@ -27,7 +27,8 @@ int Client()
 	bzero(&otheraddr, sizeof(otheraddr));
 
 	otheraddr.sin_family = AF_INET;
-	otheraddr.sin_port = htons(32088);
+	//My Student Port Number was already being used
+	otheraddr.sin_port = htons(port);
 	otheraddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	s = socket(AF_INET, SOCK_STREAM, 0);
@@ -35,10 +36,13 @@ int Client()
 	//otherhost = gethostbyname(otherhostname);
 	//bcopy(otherhost->h_addr_list[0], &otheraddr.sin_addr, otherhost->h_length);
 
-	n = connect(s, &otheraddr, sizeof(otheraddr));
+	while(n < 0){
+		n = connect(s, &otheraddr, sizeof(otheraddr));
+	}
+
 
 	if ( n < 0)
-		return(n);
+		return(-1);
 	else
 		return(s);
 }

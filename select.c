@@ -25,7 +25,7 @@
 		/* select blocks, and n is the number of ready descriptors */
 		if ( (n == -1 ) && (errno == EINTR) ) /* interruption */
 		   continue;
-	  	if ((n== -1) {	/* error: you may handle it, if you want */
+	  if ((n== -1) {	/* error: you may handle it, if you want */
 		 	/* code to handle errors */
 	  	}
 		/* after this point, handle the ready descriptor(s) */

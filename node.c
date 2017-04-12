@@ -4,7 +4,6 @@
 struct cthread{
     int threadid;
     int nodeID;
-    int snode;
 };
 
 void *node_manager(void *threadid);
@@ -21,13 +20,13 @@ int main(int argc, char** argv){
 
   for (i=0; i<3; i++){
     threadData[i]->nodeID = i;
-    if(argc > 1) threadData[i]->snode = atoi(argv[1]);
+  
 
     if(pthread_create( &t[i], NULL, node_manager, (void*)threadData[i]) < 0){
         perror("could not create node\n");
         return 1;
     }
-    sleep(15);
+    sleep(1);
   }
   pthread_exit(NULL);
   return 0;
@@ -41,8 +40,6 @@ void *node_manager(void *threadData){
   threadD[1] = malloc(sizeof(struct cthread));
   threadD[0]->nodeID = temp->nodeID;
   threadD[1]->nodeID = temp->nodeID;
-  threadD[0]->snode = temp->snode;
-  threadD[1]->snode = temp->snode;
 
   int fd, i;
   char buf[80];
@@ -62,16 +59,14 @@ void *node_manager(void *threadData){
 void *node_init(void *threadData){
   struct cthread* threadD = threadData;
   int fd, i;
-  int *fds;
   char buf[80];
 
   //printf("Node: %d Thread: %d\n", threadD->nodeID, threadD->threadid);
 
   if(threadD->threadid == 0){
-    fds = Server();
-    printf("This is Server fd: %d From Node: %d\n", *fds, threadD->nodeID);
-    close(*fds);
-    close(*(fds));
+    fd = Server(threadD->nodeID + 5000);
+    printf("This is Server fd: %d From Node: %d\n", fd, threadD->nodeID);
+    close(fd);
   }else if(threadD->threadid == 1){
     fd = Client();
     printf("This is Client fd: %d From Node: %d\n", fd, threadD->nodeID);

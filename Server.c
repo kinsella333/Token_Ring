@@ -12,7 +12,7 @@
 
 #include "header.h"
 
-int Server()
+int Server(int port)
 {
 	struct sockaddr_in myaddr, otheraddr;
 	struct hostent *myname;
@@ -26,16 +26,18 @@ int Server()
 	if ((s = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) ReportError ("socket");
 	bzero(&myaddr, sizeof(myaddr));
 	myaddr.sin_family  = AF_INET;
-	myaddr.sin_port = htons(32088);
+	//My Student Port Number was already being used
+	myaddr.sin_port = htons(port);
 	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	bind(s, &myaddr, sizeof(myaddr));
 
 	listen(s, 1);
+	//printf("Server Listening \n");
 
-	//otherlength = sizeof(otheraddr);
-	//fd = accept(s, &otheraddr, &otherlength);
+	otherlength = sizeof(otheraddr);
+	fd = accept(s, &otheraddr, &otherlength);
 
-	//printf("Connected\n");
+	printf("Connected\n");
 
 	return(s);
 }
