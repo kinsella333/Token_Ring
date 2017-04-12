@@ -154,7 +154,7 @@ void *node_manager(void *threadData){
       }else if((buffer[2] != 0x10 || buffer[3] != 0x02)){
         if(buffer[4] == *(threadD->shared->node_id)){
           printf("Recieved Message: %.*s\n", 80, buffer + 6);
-          printf("From Address: %.*s\n",1,buffer + 4);
+          printf("From Address: %.*s\n",1,buffer + 5);
         }else{
           printf("Recieved Message, But not for me\n");
           deserialize_frame(buffer, threadD);
