@@ -39,5 +39,5 @@ int Server(int port)
 
 	printf("Connected\n");
 
-	return(s);
+	return(fd);
 }

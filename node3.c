@@ -1,10 +1,19 @@
-#include <time.h>
 #include "header.h"
 
+struct frame{
+  char start[2];
+  char token[2];
+  char dst_address;
+  char src_address;
+  char msg[80];
+  char end[2];
+};
 
 struct sharedMem{
-  int choice;
+  int quit;
   pthread_mutex_t mutex;
+  char *node_id;
+  struct frame *f;
 };
 
 struct cthread{
@@ -13,14 +22,20 @@ struct cthread{
     int port;
 };
 
+static char charset[] = "abcdefghijklmnopqrstuvwxyz";
+
+
 void *node_manager(void *threadid);
+unsigned char * serialize_frame(unsigned char *buffer, struct cthread *t);
+struct frame * deserialize_frame(unsigned char *buffer, struct cthread *t);
 
 int main(int argc, char** argv){
   pthread_t t[2];
   int i, port[2], *ret[2];
   struct cthread *threadData[2];
   struct sharedMem *s = malloc(sizeof(struct sharedMem));
-  char input[32];
+  struct frame *f = malloc(sizeof(struct frame));
+  char input[80], dst[2];
 
   if(argc > 2){
     port[0] = atoi(argv[2]);
@@ -34,7 +49,18 @@ int main(int argc, char** argv){
   if(pthread_mutex_init(&s->mutex, NULL) != 0){
          printf("\n mutex init failed\n");
          return 1;
-    }
+  }
+
+  f->start[0] = 0x16;
+  f->start[1] = 0x16;
+  f->token[0] = 0x10;
+  f->token[1] = 0x02;
+  f->dst_address = -1;
+  f->src_address = -1;
+  f->end[0] = 0x10;
+  f->end[1] = 0x03;
+
+  s->f = f;
 
   for (i=0; i<2; i++){
     threadData[i] = malloc(sizeof(struct cthread));
@@ -49,16 +75,30 @@ int main(int argc, char** argv){
   }
 
   while(1){
-    fgets(input, 32, stdin);
-    input[strcspn(input, "\n" )] = '\0';
+    fgets(input, 80, stdin);
 
-    if(strcmp(input, "quit") == 0){
+    if(strcmp(input, "quit\n") == 0){
       pthread_mutex_lock(&(s->mutex));
-      s->choice = 1;
+      s->quit = 1;
       pthread_mutex_unlock(&(s->mutex));
       break;
-    }else if(){
+    }else if(input[0] == 0x10){
+      printf("Enter Message (Max 80 Characters)\nmsg:");
+      fgets(input, 80, stdin);
 
+      printf("Destination node address (ADD OPTIONS HERE): ");
+      fgets(dst, 2, stdin);
+
+      pthread_mutex_lock(&(s->mutex));
+      for(i = 0; i < 80; i++){
+          s->f->msg[i] = input[i];
+      }
+      s->f->token[0] = s->f->end[0];
+      s->f->token[1] = s->f->end[1];
+      s->f->dst_address = dst[0];
+      s->f->src_address = *(s->node_id);
+
+      pthread_mutex_unlock(&(s->mutex));
     }
   }
 
@@ -71,23 +111,111 @@ int main(int argc, char** argv){
 
 void *node_manager(void *threadData){
   struct cthread* threadD = threadData;
-  int fd, i = 0, choice = 0;
-  char buf[80];
+  int fd, i = 0, choice = 0, size;
+  char c;
+  unsigned char buffer[88];
 
   if(threadD->threadid == 0){
     fd = Server(threadD->port);
-    printf("This is Server fd: %d From Node: %d\n", fd, threadD->port);
+    printf("This is Server fd: %d From Port: %d\n", fd, threadD->port);
   }else if(threadD->threadid == 1){
     fd = Client(threadD->port);
-    printf("This is Client fd: %d From Node: %d\n", fd, threadD->port);
+    printf("This is Client fd: %d From Port: %d\n", fd, threadD->port);
+    c = charset[(threadD->port)%20];
+    pthread_mutex_lock(&(threadD->shared->mutex));
+    threadD->shared->node_id = &c;
+    pthread_mutex_unlock(&(threadD->shared->mutex));
+    printf("Node Address is: %.*s\n",1,threadD->shared->node_id);
   }
 
   while(1){
-    if(threadD->shared->choice == 1){
+    if(threadD->shared->quit == 1){
       break;
     }
+
+    //Client
+    if(threadD->threadid == 1){
+      serialize_frame(buffer, threadD);
+      //printf("%x %x\n", buffer[2], buffer[3]);
+      send(fd, buffer, sizeof(buffer), 0);
+      pthread_mutex_lock(&(threadD->shared->mutex));
+      threadD->shared->f->token[0] = 0x10;
+      threadD->shared->f->token[1] = 0x02;
+      pthread_mutex_unlock(&(threadD->shared->mutex));
+    }
+
+    //Server
+    if(threadD->threadid == 0){
+      size = recv(fd, buffer, sizeof(buffer), 0);
+      //printf("%x %x\n", buffer[2], buffer[3]);
+      if(size == 0){
+        printf("Recieve Error\n");
+
+      }else if((buffer[2] != 0x10 || buffer[3] != 0x02)){
+        if(buffer[4] == *(threadD->shared->node_id)){
+          printf("Recieved Message: %.*s\n", 80, buffer + 6);
+          printf("From Address: %.*s\n",1,buffer + 4);
+        }else{
+          printf("Recieved Message, But not for me\n");
+          deserialize_frame(buffer, threadD);
+        }
+
+      /*  pthread_mutex_lock(&(threadD->shared->mutex));
+        threadD->shared->f->token[0] = 0x10;
+        threadD->shared->f->token[1] = 0x02;
+        pthread_mutex_unlock(&(threadD->shared->mutex));
+      */
+
+      }
+    }
+    sleep(2);
   }
 
   pthread_exit(NULL);
   close(fd);
+}
+
+unsigned char * serialize_frame(unsigned char *buffer, struct cthread *t){
+    int i = 0;
+
+    pthread_mutex_lock(&(t->shared->mutex));
+    buffer[0] = t->shared->f->start[0];
+    buffer[1] = t->shared->f->start[1];
+    buffer[2] = t->shared->f->token[0];
+    buffer[3] = t->shared->f->token[1];
+    buffer[4] = t->shared->f->dst_address;
+    buffer[5] = t->shared->f->src_address;
+
+    for(i = 0; i < 80; i++){
+      buffer[i+6] = t->shared->f->msg[i];
+    }
+
+    buffer[86] = t->shared->f->end[0];
+    buffer[87] = t->shared->f->end[1];
+
+    pthread_mutex_unlock(&(t->shared->mutex));
+    return buffer;
+}
+
+struct frame * deserialize_frame(unsigned char *buffer, struct cthread *t){
+    int i = 0;
+
+    pthread_mutex_lock(&(t->shared->mutex));
+
+    t->shared->f->start[0] = buffer[0];
+    t->shared->f->start[1] = buffer[1];
+    t->shared->f->token[0] = buffer[2];
+    t->shared->f->token[1] = buffer[3];
+    t->shared->f->dst_address = buffer[4];
+    t->shared->f->src_address = buffer[5];
+
+    for(i = 0; i < 80; i++){
+      t->shared->f->msg[i] = buffer[i+6];
+    }
+
+    t->shared->f->end[0] = buffer[86];
+    t->shared->f->end[1] = buffer[87];
+
+    pthread_mutex_unlock(&(t->shared->mutex));
+    return t;
 }
