@@ -27,14 +27,10 @@ int Client(int port)
 	bzero(&otheraddr, sizeof(otheraddr));
 
 	otheraddr.sin_family = AF_INET;
-	//My Student Port Number was already being used
 	otheraddr.sin_port = htons(port);
 	otheraddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	s = socket(AF_INET, SOCK_STREAM, 0);
-
-	//otherhost = gethostbyname(otherhostname);
-	//bcopy(otherhost->h_addr_list[0], &otheraddr.sin_addr, otherhost->h_length);
 
 	while(n < 0){
 		n = connect(s, &otheraddr, sizeof(otheraddr));
