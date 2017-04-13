@@ -37,7 +37,7 @@ int Server(int port)
 	otherlength = sizeof(otheraddr);
 	fd = accept(s, &otheraddr, &otherlength);
 
-	printf("Connected\n");
+	printf("sys> Connected\n");
 
 	return(fd);
 }

@@ -16,6 +16,7 @@ struct sharedMem{
   char *node_id;
   struct frame *f;
   struct frame *forward_frame;
+  int connected;
 };
 
 struct cthread{
@@ -66,6 +67,7 @@ int main(int argc, char** argv){
 
   s->f = f;
   s->forward_frame = forward_frame;
+  s->connected = 0;
 
   for (i=0; i<2; i++){
     threadData[i] = malloc(sizeof(struct cthread));
@@ -81,15 +83,14 @@ int main(int argc, char** argv){
 
   sleep(2);
   while(1){
-    printf("\nEnter msg to provide message\nEnter ^P to provide token\n");
     fgets(input, 80, stdin);
 
     if(strcmp(input, "msg\n") == 0){
-      printf("Destination node address: ");
+      printf("sys> Destination node address\ninput> ");
       fgets(dst, 4, stdin);
 
       bzero(input,80);
-      printf("Enter Message (Max 80 Characters, Extra Will Be Cut)\nmsg:");
+      printf("sys> Enter Message (Max 80 Characters, Extra Will Be Cut)\ninput>");
       fgets(input, 80, stdin);
 
       pthread_mutex_lock(&(s->mutex));
@@ -110,6 +111,7 @@ int main(int argc, char** argv){
       pthread_mutex_unlock(&(s->mutex));
     }
     bzero(input,80);
+    printf("\nsys> Enter msg to provide message\nsys> Enter ^P to provide token\ninput>");
   }
 
   pthread_join(t[0], (void**)&(ret[0]));
@@ -127,18 +129,24 @@ void *node_manager(void *threadData){
 
   if(threadD->threadid == 0){
     fd = Server(threadD->port);
-    printf("Server Created\n");
+    printf("sys> Server Created\n");
   }else if(threadD->threadid == 1){
     fd = Client(threadD->port);
-    printf("Client Created\n");
+    printf("sys> Client Created\n");
     c = charset[(threadD->port)%20];
 
     pthread_mutex_lock(&(threadD->shared->mutex));
     threadD->shared->node_id = &c;
     pthread_mutex_unlock(&(threadD->shared->mutex));
-
-    printf("Node Address is: %.*s\n",1,threadD->shared->node_id);
   }
+  pthread_mutex_lock(&(threadD->shared->mutex));
+  threadD->shared->connected++;
+
+  if(threadD->shared->connected > 1){
+    printf("sys> Node Address is: %.*s\n",1,threadD->shared->node_id);
+    printf("\nsys> Enter msg to provide message\nsys> Enter ^P to provide token\ninput>");
+  }
+  pthread_mutex_unlock(&(threadD->shared->mutex));
 
   while(1){
 
@@ -192,6 +200,7 @@ void *node_manager(void *threadData){
             threadD->shared->forward_frame->waiting = 1;
             pthread_mutex_unlock(&(threadD->shared->mutex));
           }
+          printf("\nsys> Enter msg to provide message\nsys> Enter ^P to provide token\ninput>");
         }
       }
     }

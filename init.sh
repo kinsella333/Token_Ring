@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 tmux new-session -d -s node
 tmux send-keys -t 'node':0 './node 5000 5002' Enter
 sleep 1
