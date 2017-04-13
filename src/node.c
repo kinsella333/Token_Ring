@@ -203,7 +203,9 @@ void *node_manager(void *threadData){
         //If the frame has gone all the way around the chain,
         //the Destination must not exist on the chain
         if(buffer[5] == *(threadD->shared->node_id)){
-          printf("Error Node does not exist\n");
+          pthread_mutex_lock(&(threadD->shared->mutex));
+          threadD->shared->token++;
+          printf("Error Node does not exist or destination is self\n");
         }else{
           //If the Destination Address is this node, then print message and
           //accept token.
