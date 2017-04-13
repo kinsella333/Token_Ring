@@ -1,6 +1,6 @@
 # final_proj
 
-<h1>Run Instructions</h1>
+<h2>Run Instructions</h2>
 
 <p>
 1)
