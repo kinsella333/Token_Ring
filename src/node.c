@@ -35,7 +35,7 @@ int main(int argc, char** argv){
   struct cthread *threadData[2];
   struct sharedMem *s = malloc(sizeof(struct sharedMem));
   struct frame *f = malloc(sizeof(struct frame));
-  char input[80], dst[2];
+  char input[80], dst[4];
 
   if(argc > 2){
     port[0] = atoi(argv[2]);
@@ -83,11 +83,12 @@ int main(int argc, char** argv){
       pthread_mutex_unlock(&(s->mutex));
       break;
     }else if(input[0] == 0x10){
+      printf("Destination node address: ");
+      fgets(dst, 4, stdin);
+
+
       printf("Enter Message (Max 80 Characters)\nmsg:");
       fgets(input, 80, stdin);
-
-      printf("Destination node address (ADD OPTIONS HERE): ");
-      fgets(dst, 2, stdin);
 
       pthread_mutex_lock(&(s->mutex));
       for(i = 0; i < 80; i++){
@@ -111,7 +112,7 @@ int main(int argc, char** argv){
 
 void *node_manager(void *threadData){
   struct cthread* threadD = threadData;
-  int fd, i = 0, choice = 0, size;
+  int fd, i = 0, choice = 0, size, quit = 0;
   char c;
   unsigned char buffer[88];
 
@@ -129,14 +130,13 @@ void *node_manager(void *threadData){
   }
 
   while(1){
-    if(threadD->shared->quit == 1){
+    if(threadD->shared->quit == 1 || quit == 1){
       break;
     }
 
     //Client
     if(threadD->threadid == 1){
       serialize_frame(buffer, threadD);
-      //printf("%x %x\n", buffer[2], buffer[3]);
       send(fd, buffer, sizeof(buffer), 0);
       pthread_mutex_lock(&(threadD->shared->mutex));
       threadD->shared->f->token[0] = 0x10;
@@ -147,9 +147,10 @@ void *node_manager(void *threadData){
     //Server
     if(threadD->threadid == 0){
       size = recv(fd, buffer, sizeof(buffer), 0);
-      //printf("%x %x\n", buffer[2], buffer[3]);
+
       if(size == 0){
-        printf("Recieve Error\n");
+        printf("Token Ring Broken, Exiting\n");
+        quit = 1;
 
       }else if((buffer[2] != 0x10 || buffer[3] != 0x02)){
         if(buffer[4] == *(threadD->shared->node_id)){
@@ -168,7 +169,7 @@ void *node_manager(void *threadData){
 
       }
     }
-    sleep(2);
+    sleep(1);
   }
 
   pthread_exit(NULL);
