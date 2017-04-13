@@ -1,6 +1,8 @@
 # final_proj
 
 <h2>Run Instructions</h2>
+<p>The Bash scripts rely on TMUX, a terminal multiplexer that can be found here
+https://tmux.github.io/ They will not run without TMUX installed.</p>
 <p>To run simple 3 node chain run ./init.sh</p>
 <p>To run n node chain run ./initMulti.sh n where n is number of nodes to run</p>
 <p>To run each node individually run ./node (Client Port) (Server Port)</p>
