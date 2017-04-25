@@ -205,6 +205,7 @@ void *node_manager(void *threadData){
         if(buffer[5] == *(threadD->shared->node_id)){
           pthread_mutex_lock(&(threadD->shared->mutex));
           threadD->shared->token++;
+          pthread_mutex_unlock(&(threadD->shared->mutex));
           printf("Error Node does not exist or destination is self\n");
         }else{
           //If the Destination Address is this node, then print message and
